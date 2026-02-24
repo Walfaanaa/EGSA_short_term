@@ -1,4 +1,4 @@
-# EGSA Short Term Loan App - CSV/Excel Compatible (Updated with Days Left Logic)
+# EGSA Short Term Loan App - FINAL VERSION (Correct Urgent Filter)
 
 import streamlit as st
 import pandas as pd
@@ -57,16 +57,25 @@ if uploaded_file:
             df.loc[df['days_left'] == 2, 'status'] = '2 days left'
             df.loc[df['days_left'] > 2, 'status'] = 'in progress'
 
-            # 9️⃣ Summary
+            # 9️⃣ Summary Dashboard
             st.subheader("Loans Summary")
-            st.write(f"Total loans: {len(df)}")
-            st.write(f"In Progress: {len(df[df['status']=='in progress'])}")
-            st.write(f"Completed: {len(df[df['status']=='completed'])}")
 
-            # 🔟 Urgent Loans
-            st.subheader("⚠️ Urgent Loans (Due in 2 Days or Less)")
-            urgent_loans = df[df['days_left'] <= 2]
-            st.dataframe(urgent_loans)
+            col1, col2, col3, col4, col5 = st.columns(5)
+            col1.metric("Total Loans", len(df))
+            col2.metric("In Progress", len(df[df['status'] == 'in progress']))
+            col3.metric("2 Days Left", len(df[df['status'] == '2 days left']))
+            col4.metric("1 Day Left", len(df[df['status'] == '1 day left']))
+            col5.metric("Completed", len(df[df['status'] == 'completed']))
+
+            # 🔟 Urgent Loans (ONLY 1 or 2 days left)
+            st.subheader("⚠️ Loans Due Soon (1–2 Days Only)")
+
+            urgent_loans = df[df['status'].isin(['1 day left', '2 days left'])]
+
+            if urgent_loans.empty:
+                st.info("No urgent loans 🎉")
+            else:
+                st.dataframe(urgent_loans)
 
             # 1️⃣1️⃣ In Progress Loans
             st.subheader("In Progress Loans")
@@ -97,4 +106,3 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"Error reading file: {e}")
-
