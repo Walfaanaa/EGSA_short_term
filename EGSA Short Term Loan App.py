@@ -61,8 +61,6 @@ if uploaded_file:
             st.subheader("Loans Summary")
             st.write(f"Total loans: {len(df)}")
             st.write(f"In Progress: {len(df[df['status']=='in progress'])}")
-            st.write(f"2 Days Left: {len(df[df['status']=='2 days left'])}")
-            st.write(f"1 Day Left: {len(df[df['status']=='1 day left'])}")
             st.write(f"Completed: {len(df[df['status']=='completed'])}")
 
             # 🔟 Urgent Loans
@@ -99,3 +97,4 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"Error reading file: {e}")
+
