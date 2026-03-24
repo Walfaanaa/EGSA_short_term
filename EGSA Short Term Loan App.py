@@ -85,6 +85,26 @@ if uploaded_file:
             st.subheader("Completed Loans")
             st.dataframe(df[df['status'] == 'completed'])
 
+
+
+        # 1️⃣5️⃣ Financial Summary
+st.subheader("💰 Financial Summary")
+
+# Ensure numeric (important if data comes as text)
+df['disbursed_amount'] = pd.to_numeric(df['disbursed_amount'], errors='coerce').fillna(0)
+df['interest_amount'] = pd.to_numeric(df['interest_amount'], errors='coerce').fillna(0)
+df['collection_amount'] = pd.to_numeric(df['collection_amount'], errors='coerce').fillna(0)
+
+total_disbursed = df['disbursed_amount'].sum()
+total_interest = df['interest_amount'].sum()
+total_collection = df['collection_amount'].sum()
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Total Disbursed", f"{total_disbursed:,.2f}")
+col2.metric("Total Interest", f"{total_interest:,.2f}")
+col3.metric("Total Collection", f"{total_collection:,.2f}")
+
             # 1️⃣3️⃣ All Loans
             st.subheader("All Loans with Days Left")
             st.dataframe(df)
