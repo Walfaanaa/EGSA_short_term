@@ -1,4 +1,4 @@
-# EGSA Short Term Loan App - FINAL VERSION (Correct Urgent Filter)
+# EGSA Short Term Loan App - FINAL VERSION (Fixed & Clean)
 
 import streamlit as st
 import pandas as pd
@@ -35,7 +35,6 @@ if uploaded_file:
 
         if missing_cols:
             st.error(f"Missing columns in your file: {missing_cols}")
-
         else:
             # 4️⃣ Validate loan_type
             valid_types = ['level_1', 'level_2', 'level_3', 'level_4']
@@ -67,9 +66,8 @@ if uploaded_file:
             col4.metric("1 Day Left", len(df[df['status'] == '1 day left']))
             col5.metric("Completed", len(df[df['status'] == 'completed']))
 
-            # 🔟 Urgent Loans (ONLY 1 or 2 days left)
+            # 🔟 Urgent Loans
             st.subheader("⚠️ Loans Due Soon (1–2 Days Only)")
-
             urgent_loans = df[df['status'].isin(['1 day left', '2 days left'])]
 
             if urgent_loans.empty:
@@ -85,25 +83,25 @@ if uploaded_file:
             st.subheader("Completed Loans")
             st.dataframe(df[df['status'] == 'completed'])
 
+            # 1️⃣5️⃣ Financial Summary ✅ (FIXED POSITION)
+            st.subheader("💰 Financial Summary")
 
+            df['disbursed_amount'] = pd.to_numeric(df['disbursed_amount'], errors='coerce').fillna(0)
+            df['interest_amount'] = pd.to_numeric(df['interest_amount'], errors='coerce').fillna(0)
+            df['collection_amount'] = pd.to_numeric(df['collection_amount'], errors='coerce').fillna(0)
 
-        # 1️⃣5️⃣ Financial Summary
-st.subheader("💰 Financial Summary")
+            total_disbursed = df['disbursed_amount'].sum()
+            total_interest = df['interest_amount'].sum()
+            total_collection = df['collection_amount'].sum()
 
-# Ensure numeric (important if data comes as text)
-df['disbursed_amount'] = pd.to_numeric(df['disbursed_amount'], errors='coerce').fillna(0)
-df['interest_amount'] = pd.to_numeric(df['interest_amount'], errors='coerce').fillna(0)
-df['collection_amount'] = pd.to_numeric(df['collection_amount'], errors='coerce').fillna(0)
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Disbursed", f"{total_disbursed:,.2f}")
+            col2.metric("Total Interest", f"{total_interest:,.2f}")
+            col3.metric("Total Collection", f"{total_collection:,.2f}")
 
-total_disbursed = df['disbursed_amount'].sum()
-total_interest = df['interest_amount'].sum()
-total_collection = df['collection_amount'].sum()
-
-col1, col2, col3 = st.columns(3)
-
-col1.metric("Total Disbursed", f"{total_disbursed:,.2f}")
-col2.metric("Total Interest", f"{total_interest:,.2f}")
-col3.metric("Total Collection", f"{total_collection:,.2f}")
+            # Optional total
+            total_all = total_disbursed + total_interest + total_collection
+            st.metric("Total (All Combined)", f"{total_all:,.2f}")
 
             # 1️⃣3️⃣ All Loans
             st.subheader("All Loans with Days Left")
