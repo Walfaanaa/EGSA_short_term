@@ -99,10 +99,6 @@ if uploaded_file:
             col2.metric("Total Interest", f"{total_interest:,.2f}")
             col3.metric("Total Collection", f"{total_collection:,.2f}")
 
-            # Optional total
-            total_all = total_disbursed + total_interest + total_collection
-            st.metric("Total (All Combined)", f"{total_all:,.2f}")
-
             # 1️⃣3️⃣ All Loans
             st.subheader("All Loans with Days Left")
             st.dataframe(df)
