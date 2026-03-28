@@ -9,7 +9,7 @@ st.title("EGSA Short Term Loan Management")
 
 # 1️⃣ Upload file or load from GitHub
 uploaded_file = st.file_uploader("Upload your Excel or CSV file", type=["xlsx", "xls", "csv"])
-github_url = "https://raw.githubusercontent.com/Walfaanaa/EGSA_short_term/main/EGSA2025_short_loan.csv"
+github_url = "https://raw.githubusercontent.com/Walfaanaa/EGSA_short_term/main/EGSA2025_short_loan.xlsx"
 
 if st.button("Load default CSV from GitHub"):
     uploaded_file = github_url
