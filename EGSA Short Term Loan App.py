@@ -75,7 +75,7 @@ if st.session_state.data_source:
             st.stop()
 
         # -------------------- CLEANING --------------------
-        valid_types = ['level_1', 'level_2', 'level_3', 'level_4']
+        valid_types = ['level_1', 'level_2', 'level_3', 'level_4','level_5','level_6']
         df = df[df['loan_type'].isin(valid_types)]
 
         df['status'] = df['status'].fillna('in progress').str.lower()
