@@ -111,49 +111,49 @@ if st.session_state.data_source:
             ]
 
         # -------------------- SUMMARY --------------------
-        st.subheader("📌 Loan Summary")
+        # -------------------- SUMMARY --------------------
+st.subheader("📌 Loan Summary")
 
-        in_progress_df = df[df['status'] == 'in progress']
-        two_days_df = df[df['status'] == '2 days left']
-        one_day_df = df[df['status'] == '1 day left']
-        completed_df = df[df['status'] == 'completed']
-        overdue_df = df[df['status'] == 'overdue']
+in_progress_df = df[df['status'] == 'in progress']
+two_days_df = df[df['status'] == '2 days left']
+one_day_df = df[df['status'] == '1 day left']
+completed_df = df[df['status'] == 'completed']
+overdue_df = df[df['status'] == 'overdue']
 
-        # totals
-        in_progress_total = in_progress_df['disbursed_amount'].sum()
-        completed_total = completed_df['disbursed_amount'].sum()
+# totals (correct logic)
+in_progress_total_d = in_progress_df['disbursed_amount'].sum()
+in_progress_total_c = in_progress_df['collection_amount'].sum()
 
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
+completed_total_d = completed_df['disbursed_amount'].sum()
+completed_total_c = completed_df['collection_amount'].sum()
 
-        col1.metric("Total Loans", len(df))
+overdue_total_d = overdue_df['disbursed_amount'].sum()
+overdue_total_c = overdue_df['collection_amount'].sum()
 
-        col2.metric("In Progress", len(in_progress_df), f"{in_progress_total:,.2f}")
-        col3.metric("2 Days Left", len(two_days_df))
-        col4.metric("1 Day Left", len(one_day_df))
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-        col5.metric("Completed", len(completed_df), f"{completed_total:,.2f}")
-        col6.metric("Overdue", len(overdue_df))
+col1.metric("Total Loans", len(df))
 
-        # -------------------- URGENT --------------------
-        st.subheader("⚠️ Urgent Loans (1–2 Days)")
-        urgent = df[df['status'].isin(['1 day left', '2 days left'])]
+col2.metric(
+    "In Progress",
+    len(in_progress_df),
+    f"D:{in_progress_total_d:,.2f} | C:{in_progress_total_c:,.2f}"
+)
 
-        if urgent.empty:
-            st.success("No urgent loans ✅")
-        else:
-            st.dataframe(urgent)
+col3.metric("2 Days Left", len(two_days_df))
+col4.metric("1 Day Left", len(one_day_df))
 
-        # -------------------- OVERDUE --------------------
-        st.subheader("🚨 Overdue Loans")
+col5.metric(
+    "Completed",
+    len(completed_df),
+    f"D:{completed_total_d:,.2f} | C:{completed_total_c:,.2f}"
+)
 
-        if overdue_df.empty:
-            st.success("No overdue loans ✅")
-        else:
-            st.dataframe(overdue_df)
-
-        # -------------------- TABLE --------------------
-        st.subheader("📋 Filtered Loans")
-        st.dataframe(filtered_df)
+col6.metric(
+    "Overdue",
+    len(overdue_df),
+    f"D:{overdue_total_d:,.2f} | C:{overdue_total_c:,.2f}"
+)
 
         # -------------------- FINANCIAL SUMMARY --------------------
         st.subheader("💰 Financial Summary")
