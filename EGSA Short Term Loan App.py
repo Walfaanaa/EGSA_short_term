@@ -31,7 +31,6 @@ if uploaded_file is not None:
 def load_data(source):
     try:
         if isinstance(source, str):
-            # GitHub URL
             if source.endswith(".xlsx"):
                 return pd.read_excel(source)
             else:
@@ -39,9 +38,7 @@ def load_data(source):
                     return pd.read_csv(source, encoding='utf-8')
                 except:
                     return pd.read_csv(source, encoding='latin-1')
-
         else:
-            # Uploaded file
             if source.name.endswith((".xlsx", ".xls")):
                 return pd.read_excel(source)
             else:
@@ -61,7 +58,7 @@ if st.session_state.data_source:
 
     if df is not None:
 
-        # Required columns
+        # -------------------- REQUIRED COLUMNS --------------------
         required_columns = [
             "loan_id", "business_date", "id", "loan_type", "disbursed_amount",
             "interest_rate", "interest_amount", "collection_amount",
@@ -75,13 +72,13 @@ if st.session_state.data_source:
             st.stop()
 
         # -------------------- CLEANING --------------------
-        valid_types = ['level_1', 'level_2', 'level_3', 'level_4','level_5','level_6']
+        valid_types = ['level_1', 'level_2', 'level_3', 'level_4', 'level_5', 'level_6']
         df = df[df['loan_type'].isin(valid_types)]
 
         df['status'] = df['status'].fillna('in progress').str.lower()
         df['due_date'] = pd.to_datetime(df['due_date'], errors='coerce')
 
-        # Convert numeric safely
+        # Numeric conversion
         for col in ['disbursed_amount', 'interest_amount', 'collection_amount']:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
@@ -117,13 +114,30 @@ if st.session_state.data_source:
         # -------------------- SUMMARY --------------------
         st.subheader("📌 Loan Summary")
 
+        # Prepare subsets
+        in_progress_df = df[df['status'] == 'in progress']
+        two_days_df = df[df['status'] == '2 days left']
+        one_day_df = df[df['status'] == '1 day left']
+        completed_df = df[df['status'] == 'completed']
+        overdue_df = df[df['status'] == 'overdue']
+
+        # Totals
+        in_progress_total = in_progress_df['disbursed_amount'].sum()
+
         col1, col2, col3, col4, col5, col6 = st.columns(6)
-        col1.metric("Total", len(df))
-        col2.metric("In Progress", len(df[df['status'] == 'in progress']))
-        col3.metric("2 Days Left", len(df[df['status'] == '2 days left']))
-        col4.metric("1 Day Left", len(df[df['status'] == '1 day left']))
-        col5.metric("Completed", len(df[df['status'] == 'completed']))
-        col6.metric("Overdue", len(df[df['status'] == 'overdue']))
+
+        col1.metric("Total Loans", len(df))
+
+        col2.metric(
+            "In Progress",
+            len(in_progress_df),
+            f"{in_progress_total:,.2f}"
+        )
+
+        col3.metric("2 Days Left", len(two_days_df))
+        col4.metric("1 Day Left", len(one_day_df))
+        col5.metric("Completed", len(completed_df))
+        col6.metric("Overdue", len(overdue_df))
 
         # -------------------- URGENT --------------------
         st.subheader("⚠️ Urgent Loans (1–2 Days)")
@@ -136,12 +150,11 @@ if st.session_state.data_source:
 
         # -------------------- OVERDUE --------------------
         st.subheader("🚨 Overdue Loans")
-        overdue = df[df['status'] == 'overdue']
 
-        if overdue.empty:
+        if overdue_df.empty:
             st.success("No overdue loans ✅")
         else:
-            st.dataframe(overdue)
+            st.dataframe(overdue_df)
 
         # -------------------- TABLE --------------------
         st.subheader("📋 Filtered Loans")
@@ -155,6 +168,7 @@ if st.session_state.data_source:
         total_collection = df['collection_amount'].sum()
 
         col1, col2, col3 = st.columns(3)
+
         col1.metric("Total Disbursed", f"{total_disbursed:,.2f}")
         col2.metric("Total Interest", f"{total_interest:,.2f}")
         col3.metric("Total Collection", f"{total_collection:,.2f}")
