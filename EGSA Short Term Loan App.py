@@ -1,4 +1,4 @@
-# EGSA Short Term Loan App - PRODUCTION VERSION
+# ==================== EGSA SHORT TERM LOAN APP ====================
 
 import streamlit as st
 import pandas as pd
@@ -13,9 +13,9 @@ st.title("📊 EGSA Short Term Loan Management")
 if "data_source" not in st.session_state:
     st.session_state.data_source = None
 
-# -------------------- FILE INPUT --------------------
+# -------------------- INPUT --------------------
 uploaded_file = st.file_uploader(
-    "Upload your Excel or CSV file",
+    "Upload Excel or CSV file",
     type=["xlsx", "xls", "csv"]
 )
 
@@ -27,7 +27,8 @@ if st.button("Load Default File from GitHub"):
 if uploaded_file is not None:
     st.session_state.data_source = uploaded_file
 
-# -------------------- READ DATA --------------------
+
+# -------------------- LOAD DATA --------------------
 def load_data(source):
     try:
         if isinstance(source, str):
@@ -35,21 +36,21 @@ def load_data(source):
                 return pd.read_excel(source)
             else:
                 try:
-                    return pd.read_csv(source, encoding='utf-8')
+                    return pd.read_csv(source, encoding="utf-8")
                 except:
-                    return pd.read_csv(source, encoding='latin-1')
+                    return pd.read_csv(source, encoding="latin-1")
         else:
             if source.name.endswith((".xlsx", ".xls")):
                 return pd.read_excel(source)
             else:
                 try:
-                    return pd.read_csv(source, encoding='utf-8')
+                    return pd.read_csv(source, encoding="utf-8")
                 except:
-                    return pd.read_csv(source, encoding='latin-1')
-
+                    return pd.read_csv(source, encoding="latin-1")
     except Exception as e:
         st.error(f"Error reading file: {e}")
         return None
+
 
 # -------------------- PROCESS --------------------
 if st.session_state.data_source:
@@ -65,10 +66,9 @@ if st.session_state.data_source:
             "from_account", "to_account", "due_date", "Phone_no", "status"
         ]
 
-        missing_cols = [col for col in required_columns if col not in df.columns]
-
-        if missing_cols:
-            st.error(f"❌ Missing columns: {missing_cols}")
+        missing = [c for c in required_columns if c not in df.columns]
+        if missing:
+            st.error(f"Missing columns: {missing}")
             st.stop()
 
         # -------------------- CLEANING --------------------
@@ -86,13 +86,23 @@ if st.session_state.data_source:
         df['days_left'] = (df['due_date'] - today).dt.days
 
         # -------------------- STATUS LOGIC --------------------
-        df.loc[(df['days_left'] <= 0) & (df['collection_amount'] >= df['disbursed_amount']), 'status'] = 'completed'
-        df.loc[(df['days_left'] <= 0) & (df['collection_amount'] < df['disbursed_amount']), 'status'] = 'overdue'
+        df.loc[
+            (df['days_left'] <= 0) &
+            (df['collection_amount'] >= df['disbursed_amount']),
+            'status'
+        ] = 'completed'
+
+        df.loc[
+            (df['days_left'] <= 0) &
+            (df['collection_amount'] < df['disbursed_amount']),
+            'status'
+        ] = 'overdue'
+
         df.loc[df['days_left'] == 1, 'status'] = '1 day left'
         df.loc[df['days_left'] == 2, 'status'] = '2 days left'
         df.loc[df['days_left'] > 2, 'status'] = 'in progress'
 
-        # -------------------- SIDEBAR FILTER --------------------
+        # -------------------- FILTER --------------------
         st.sidebar.header("🔍 Filter Loans")
 
         status_filter = st.sidebar.multiselect(
@@ -110,50 +120,70 @@ if st.session_state.data_source:
                 filtered_df['id'].astype(str).str.contains(search_id)
             ]
 
+        # -------------------- GROUPS --------------------
+        in_progress_df = df[df['status'] == 'in progress']
+        two_days_df = df[df['status'] == '2 days left']
+        one_day_df = df[df['status'] == '1 day left']
+        completed_df = df[df['status'] == 'completed']
+        overdue_df = df[df['status'] == 'overdue']
+
+        # -------------------- TOTALS --------------------
+        def totals(data):
+            return data['disbursed_amount'].sum(), data['collection_amount'].sum()
+
+        in_d, in_c = totals(in_progress_df)
+        comp_d, comp_c = totals(completed_df)
+        ov_d, ov_c = totals(overdue_df)
+
         # -------------------- SUMMARY --------------------
-        # -------------------- SUMMARY --------------------
-st.subheader("📌 Loan Summary")
+        st.subheader("📌 Loan Summary")
 
-in_progress_df = df[df['status'] == 'in progress']
-two_days_df = df[df['status'] == '2 days left']
-one_day_df = df[df['status'] == '1 day left']
-completed_df = df[df['status'] == 'completed']
-overdue_df = df[df['status'] == 'overdue']
+        col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-# totals (correct logic)
-in_progress_total_d = in_progress_df['disbursed_amount'].sum()
-in_progress_total_c = in_progress_df['collection_amount'].sum()
+        col1.metric("Total Loans", len(df))
 
-completed_total_d = completed_df['disbursed_amount'].sum()
-completed_total_c = completed_df['collection_amount'].sum()
+        col2.metric(
+            "In Progress",
+            len(in_progress_df),
+            f"D:{in_d:,.0f} | C:{in_c:,.0f}"
+        )
 
-overdue_total_d = overdue_df['disbursed_amount'].sum()
-overdue_total_c = overdue_df['collection_amount'].sum()
+        col3.metric("2 Days Left", len(two_days_df))
 
-col1, col2, col3, col4, col5, col6 = st.columns(6)
+        col4.metric("1 Day Left", len(one_day_df))
 
-col1.metric("Total Loans", len(df))
+        col5.metric(
+            "Completed",
+            len(completed_df),
+            f"D:{comp_d:,.0f} | C:{comp_c:,.0f}"
+        )
 
-col2.metric(
-    "In Progress",
-    len(in_progress_df),
-    f"D:{in_progress_total_d:,.2f} | C:{in_progress_total_c:,.2f}"
-)
+        col6.metric(
+            "Overdue",
+            len(overdue_df),
+            f"D:{ov_d:,.0f} | C:{ov_c:,.0f}"
+        )
 
-col3.metric("2 Days Left", len(two_days_df))
-col4.metric("1 Day Left", len(one_day_df))
+        # -------------------- URGENT --------------------
+        st.subheader("⚠️ Urgent Loans (1–2 Days)")
+        urgent = df[df['status'].isin(['1 day left', '2 days left'])]
 
-col5.metric(
-    "Completed",
-    len(completed_df),
-    f"D:{completed_total_d:,.2f} | C:{completed_total_c:,.2f}"
-)
+        if urgent.empty:
+            st.success("No urgent loans ✅")
+        else:
+            st.dataframe(urgent)
 
-col6.metric(
-    "Overdue",
-    len(overdue_df),
-    f"D:{overdue_total_d:,.2f} | C:{overdue_total_c:,.2f}"
-)
+        # -------------------- OVERDUE --------------------
+        st.subheader("🚨 Overdue Loans")
+
+        if overdue_df.empty:
+            st.success("No overdue loans ✅")
+        else:
+            st.dataframe(overdue_df)
+
+        # -------------------- TABLE --------------------
+        st.subheader("📋 Filtered Loans")
+        st.dataframe(filtered_df)
 
         # -------------------- FINANCIAL SUMMARY --------------------
         st.subheader("💰 Financial Summary")
@@ -162,42 +192,37 @@ col6.metric(
         total_interest = df['interest_amount'].sum()
         total_collection = df['collection_amount'].sum()
 
-        col1, col2, col3 = st.columns(3)
+        c1, c2, c3 = st.columns(3)
 
-        col1.metric("Total Disbursed", f"{total_disbursed:,.2f}")
-        col2.metric("Total Interest", f"{total_interest:,.2f}")
-        col3.metric("Total Collection", f"{total_collection:,.2f}")
+        c1.metric("Total Disbursed", f"{total_disbursed:,.0f}")
+        c2.metric("Total Interest", f"{total_interest:,.0f}")
+        c3.metric("Total Collection", f"{total_collection:,.0f}")
 
-        # -------------------- ADVANCED KPIs (NEW) --------------------
+        # -------------------- KPIs --------------------
         st.subheader("📊 Advanced KPIs")
 
-        recovery_rate = (completed_df['collection_amount'].sum() / completed_df['disbursed_amount'].sum() * 100) if completed_df['disbursed_amount'].sum() > 0 else 0
+        recovery_rate = (
+            comp_c / comp_d * 100
+            if comp_d > 0 else 0
+        )
 
-        outstanding_balance = in_progress_df['disbursed_amount'].sum() - in_progress_df['collection_amount'].sum()
+        outstanding = in_d - in_c
 
-        col1, col2, col3 = st.columns(3)
+        k1, k2, k3 = st.columns(3)
 
-        col1.metric("Recovery Rate", f"{recovery_rate:.2f}%")
-        col2.metric("Outstanding Balance", f"{outstanding_balance:,.2f}")
-        col3.metric("Active Loans", len(in_progress_df) + len(two_days_df) + len(one_day_df))
+        k1.metric("Recovery Rate", f"{recovery_rate:.2f}%")
+        k2.metric("Outstanding Balance", f"{outstanding:,.0f}")
+        k3.metric(
+            "Active Loans",
+            len(in_progress_df) + len(two_days_df) + len(one_day_df)
+        )
 
-        # -------------------- CHARTS (NEW) --------------------
+        # -------------------- CHARTS --------------------
         st.subheader("📈 Status Distribution")
-
-        status_counts = df['status'].value_counts()
-
-        chart_df = pd.DataFrame({
-            "Status": status_counts.index,
-            "Count": status_counts.values
-        })
-
-        st.bar_chart(chart_df.set_index("Status"))
+        st.bar_chart(df['status'].value_counts())
 
         st.subheader("🥧 Portfolio Distribution")
-
-        portfolio_df = df.groupby("status")["disbursed_amount"].sum().reset_index()
-
-        st.bar_chart(portfolio_df.set_index("status"))
+        st.bar_chart(df.groupby("status")["disbursed_amount"].sum())
 
         # -------------------- DOWNLOAD --------------------
         def to_excel(dataframe):
@@ -207,8 +232,8 @@ col6.metric(
             return output.getvalue()
 
         st.download_button(
-            label="⬇️ Download Updated Excel",
-            data=to_excel(df),
+            "⬇️ Download Updated Excel",
+            to_excel(df),
             file_name="EGSA_short_term_loans_updated.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
