@@ -1,4 +1,3 @@
-
 # EGSA Short Term Loan App - PRODUCTION VERSION
 
 import streamlit as st
@@ -79,7 +78,6 @@ if st.session_state.data_source:
         df['status'] = df['status'].fillna('in progress').str.lower()
         df['due_date'] = pd.to_datetime(df['due_date'], errors='coerce')
 
-        # Numeric conversion
         for col in ['disbursed_amount', 'interest_amount', 'collection_amount']:
             df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
@@ -115,14 +113,13 @@ if st.session_state.data_source:
         # -------------------- SUMMARY --------------------
         st.subheader("📌 Loan Summary")
 
-        # Subsets
         in_progress_df = df[df['status'] == 'in progress']
         two_days_df = df[df['status'] == '2 days left']
         one_day_df = df[df['status'] == '1 day left']
         completed_df = df[df['status'] == 'completed']
         overdue_df = df[df['status'] == 'overdue']
 
-        # Totals (NEW)
+        # totals
         in_progress_total = in_progress_df['disbursed_amount'].sum()
         completed_total = completed_df['disbursed_amount'].sum()
 
@@ -130,21 +127,11 @@ if st.session_state.data_source:
 
         col1.metric("Total Loans", len(df))
 
-        col2.metric(
-            "In Progress",
-            len(in_progress_df),
-            f"{in_progress_total:,.2f}"
-        )
-
+        col2.metric("In Progress", len(in_progress_df), f"{in_progress_total:,.2f}")
         col3.metric("2 Days Left", len(two_days_df))
         col4.metric("1 Day Left", len(one_day_df))
 
-        col5.metric(
-            "Completed",
-            len(completed_df),
-            f"{completed_total:,.2f}"
-        )
-
+        col5.metric("Completed", len(completed_df), f"{completed_total:,.2f}")
         col6.metric("Overdue", len(overdue_df))
 
         # -------------------- URGENT --------------------
@@ -181,6 +168,37 @@ if st.session_state.data_source:
         col2.metric("Total Interest", f"{total_interest:,.2f}")
         col3.metric("Total Collection", f"{total_collection:,.2f}")
 
+        # -------------------- ADVANCED KPIs (NEW) --------------------
+        st.subheader("📊 Advanced KPIs")
+
+        recovery_rate = (completed_df['collection_amount'].sum() / completed_df['disbursed_amount'].sum() * 100) if completed_df['disbursed_amount'].sum() > 0 else 0
+
+        outstanding_balance = in_progress_df['disbursed_amount'].sum() - in_progress_df['collection_amount'].sum()
+
+        col1, col2, col3 = st.columns(3)
+
+        col1.metric("Recovery Rate", f"{recovery_rate:.2f}%")
+        col2.metric("Outstanding Balance", f"{outstanding_balance:,.2f}")
+        col3.metric("Active Loans", len(in_progress_df) + len(two_days_df) + len(one_day_df))
+
+        # -------------------- CHARTS (NEW) --------------------
+        st.subheader("📈 Status Distribution")
+
+        status_counts = df['status'].value_counts()
+
+        chart_df = pd.DataFrame({
+            "Status": status_counts.index,
+            "Count": status_counts.values
+        })
+
+        st.bar_chart(chart_df.set_index("Status"))
+
+        st.subheader("🥧 Portfolio Distribution")
+
+        portfolio_df = df.groupby("status")["disbursed_amount"].sum().reset_index()
+
+        st.bar_chart(portfolio_df.set_index("status"))
+
         # -------------------- DOWNLOAD --------------------
         def to_excel(dataframe):
             output = BytesIO()
@@ -193,4 +211,4 @@ if st.session_state.data_source:
             data=to_excel(df),
             file_name="EGSA_short_term_loans_updated.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        ) 
+        )
