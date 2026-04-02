@@ -114,15 +114,16 @@ if st.session_state.data_source:
         # -------------------- SUMMARY --------------------
         st.subheader("📌 Loan Summary")
 
-        # Prepare subsets
+        # Subsets
         in_progress_df = df[df['status'] == 'in progress']
         two_days_df = df[df['status'] == '2 days left']
         one_day_df = df[df['status'] == '1 day left']
         completed_df = df[df['status'] == 'completed']
         overdue_df = df[df['status'] == 'overdue']
 
-        # Totals
+        # Totals (NEW)
         in_progress_total = in_progress_df['disbursed_amount'].sum()
+        completed_total = completed_df['disbursed_amount'].sum()
 
         col1, col2, col3, col4, col5, col6 = st.columns(6)
 
@@ -136,7 +137,13 @@ if st.session_state.data_source:
 
         col3.metric("2 Days Left", len(two_days_df))
         col4.metric("1 Day Left", len(one_day_df))
-        col5.metric("Completed", len(completed_df))
+
+        col5.metric(
+            "Completed",
+            len(completed_df),
+            f"{completed_total:,.2f}"
+        )
+
         col6.metric("Overdue", len(overdue_df))
 
         # -------------------- URGENT --------------------
